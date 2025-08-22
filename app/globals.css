@@ -1,0 +1,11 @@
+@import 'tailwindcss';
+@config "../hero.ts";
+
+/* Smooth scrolling for anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+.outline-transparent {
+  outline-color: #0000;
+}

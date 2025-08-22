@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id               String       @id
+  name             String
+  email            String       @unique
+  emailVerified    Boolean
+  image            String?
+  createdAt        DateTime
+  updatedAt        DateTime
+  availableCredits Int          @default(0)
+  freeCreditsUsed  Int          @default(0)
+  stripeCustomerId String?
+  accounts         Account[]
+  generations      Generation[]
+  purchases        Purchase[]
+  sessions         Session[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
+}
+
+model Purchase {
+  id                    String   @id @default(cuid())
+  userId                String
+  stripePaymentIntentId String?
+  stripeSessionId       String?
+  amount                Int
+  currency              String   @default("usd")
+  status                String
+  credits               Int
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  creditsRemaining      Int
+  creditsUsed           Int      @default(0)
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("purchase")
+}
+
+model Generation {
+  id             String   @id @default(cuid())
+  userId         String
+  imageUrl       String
+  baseImageUrl   String?
+  tattooImageUrl String?
+  bodyPart       String?
+  creditsUsed    Int      @default(1)
+  wasFree        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  prompt         String?
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("generation")
+}
