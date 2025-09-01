@@ -1,11 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import { Button } from "@heroui/button"
 import { Card, CardBody, CardHeader } from "@heroui/card"
 import { Tabs, Tab } from "@heroui/tabs"
-import { Image as ImageIcon, Trash2 } from "lucide-react"
+import { Image as ImageIcon, Trash2, Eye } from "lucide-react"
 import { type GalleryItem } from "@/lib/gallery-storage"
+import { ImageLightbox, type LightboxImage } from "@/components/ui/image-lightbox"
 
 interface GallerySectionProps {
   galleryItems: GalleryItem[]
@@ -20,6 +22,29 @@ export function GallerySection({
   onDeleteFromGallery,
   onClearGallery,
 }: GallerySectionProps) {
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxImages, setLightboxImages] = useState<LightboxImage[]>([])
+  const [currentLightboxIndex, setCurrentLightboxIndex] = useState(0)
+  
+  // Convert gallery items to lightbox format
+  const convertToLightboxImage = (item: GalleryItem): LightboxImage => ({
+    id: item.id,
+    imageUrl: item.imageUrl,
+    name: item.name || `${item.type} image`,
+    type: item.type,
+    bodyPart: item.bodyPart,
+  })
+
+  // Handle viewing an image in lightbox
+  const handleViewImage = (item: GalleryItem, filteredItems: GalleryItem[]) => {
+    const lightboxImages = filteredItems.map(convertToLightboxImage)
+    const currentIndex = filteredItems.findIndex(i => i.id === item.id)
+    
+    setLightboxImages(lightboxImages)
+    setCurrentLightboxIndex(currentIndex)
+    setLightboxOpen(true)
+  }
+
   const tabs = [
     {
       id: "all",
@@ -78,6 +103,7 @@ export function GallerySection({
                               item={item} 
                               onReuse={onReuseImage} 
                               onDelete={onDeleteFromGallery}
+                              onView={() => handleViewImage(item, galleryItems)}
                               typeLabel={`${item.type} image`}
                             />
                           ))}
@@ -101,15 +127,19 @@ export function GallerySection({
                           </Button>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                          {galleryItems.filter(item => item.type === 'base').map((item) => (
-                            <GalleryItem 
-                              key={item.id} 
-                              item={item} 
-                              onReuse={onReuseImage} 
-                              onDelete={onDeleteFromGallery}
-                              typeLabel="Base image"
-                            />
-                          ))}
+                          {galleryItems.filter(item => item.type === 'base').map((item) => {
+                            const baseImages = galleryItems.filter(i => i.type === 'base')
+                            return (
+                              <GalleryItem 
+                                key={item.id} 
+                                item={item} 
+                                onReuse={onReuseImage} 
+                                onDelete={onDeleteFromGallery}
+                                onView={() => handleViewImage(item, baseImages)}
+                                typeLabel="Base image"
+                              />
+                            )
+                          })}
                         </div>
                       </>
                     )}
@@ -127,15 +157,19 @@ export function GallerySection({
                           </Button>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                          {galleryItems.filter(item => item.type === 'tattoo').map((item) => (
-                            <GalleryItem 
-                              key={item.id} 
-                              item={item} 
-                              onReuse={onReuseImage} 
-                              onDelete={onDeleteFromGallery}
-                              typeLabel="Tattoo design"
-                            />
-                          ))}
+                          {galleryItems.filter(item => item.type === 'tattoo').map((item) => {
+                            const tattooImages = galleryItems.filter(i => i.type === 'tattoo')
+                            return (
+                              <GalleryItem 
+                                key={item.id} 
+                                item={item} 
+                                onReuse={onReuseImage} 
+                                onDelete={onDeleteFromGallery}
+                                onView={() => handleViewImage(item, tattooImages)}
+                                typeLabel="Tattoo design"
+                              />
+                            )
+                          })}
                         </div>
                       </>
                     )}
@@ -153,16 +187,20 @@ export function GallerySection({
                           </Button>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                          {galleryItems.filter(item => item.type === 'result').map((item) => (
-                            <GalleryItem 
-                              key={item.id} 
-                              item={item} 
-                              onReuse={onReuseImage} 
-                              onDelete={onDeleteFromGallery}
-                              typeLabel="Generated Result"
-                              actionLabel="Use as Base"
-                            />
-                          ))}
+                          {galleryItems.filter(item => item.type === 'result').map((item) => {
+                            const resultImages = galleryItems.filter(i => i.type === 'result')
+                            return (
+                              <GalleryItem 
+                                key={item.id} 
+                                item={item} 
+                                onReuse={onReuseImage} 
+                                onDelete={onDeleteFromGallery}
+                                onView={() => handleViewImage(item, resultImages)}
+                                typeLabel="Generated Result"
+                                actionLabel="Use as Base"
+                              />
+                            )
+                          })}
                         </div>
                       </>
                     )}
@@ -173,6 +211,15 @@ export function GallerySection({
           </Tabs>
         </CardBody>
       </Card>
+      
+      {/* Lightbox */}
+      <ImageLightbox
+        images={lightboxImages}
+        currentIndex={currentLightboxIndex}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        onNavigate={setCurrentLightboxIndex}
+      />
     </div>
   )
 }
@@ -181,14 +228,18 @@ interface GalleryItemProps {
   item: GalleryItem
   onReuse: (item: GalleryItem) => void
   onDelete: (id: string, itemName?: string) => void
+  onView: () => void
   typeLabel: string
   actionLabel?: string
 }
 
-function GalleryItem({ item, onReuse, onDelete, typeLabel, actionLabel = "Use" }: GalleryItemProps) {
+function GalleryItem({ item, onReuse, onDelete, onView, typeLabel, actionLabel = "Use" }: GalleryItemProps) {
   return (
     <div className="space-y-2">
-      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+      <div 
+        className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer group hover:ring-2 hover:ring-primary transition-all"
+        onClick={onView}
+      >
         <Image
           src={item.thumbnail}
           alt={item.name || typeLabel}
@@ -196,11 +247,8 @@ function GalleryItem({ item, onReuse, onDelete, typeLabel, actionLabel = "Use" }
           height={200}
           className="w-full h-full object-cover bg-white"
           unoptimized
-          onLoad={() => {
-            console.log('Image loaded successfully:', item.thumbnail.substring(0, 50))
-          }}
           onError={(e) => {
-            console.log('Image failed to load:', item.thumbnail)
+            console.error('Image failed to load:', item.thumbnail)
             // Try original image URL if thumbnail fails
             const target = e.target as HTMLImageElement
             if (target.src !== item.imageUrl) {
@@ -213,6 +261,10 @@ function GalleryItem({ item, onReuse, onDelete, typeLabel, actionLabel = "Use" }
             backgroundColor: 'white'
           }}
         />
+        {/* Hover overlay with view icon */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+          <Eye className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
       </div>
       <div className="flex gap-1">
         <Button

@@ -1,12 +1,16 @@
 import { useState, useCallback } from "react"
+import { processImage, type ProcessingOptions, type ProcessingResult } from "@/lib/image-processor"
 
 interface FileValidationOptions {
   maxSizeInMB?: number
   allowedTypes?: string[]
   maxWidth?: number
   maxHeight?: number
+  enableProcessing?: boolean
+  processingOptions?: ProcessingOptions
   onSuccess?: (dataUrl: string, file: File) => void
   onError?: (error: string) => void
+  onProcessingComplete?: (result: ProcessingResult) => void
 }
 
 interface FileReadResult {
@@ -17,10 +21,11 @@ interface FileReadResult {
 }
 
 const DEFAULT_OPTIONS: FileValidationOptions = {
-  maxSizeInMB: 10,
+  maxSizeInMB: 50,
   allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
   maxWidth: 4000,
   maxHeight: 4000,
+  enableProcessing: true,
 }
 
 export function useFileReader(options: FileValidationOptions = {}) {
@@ -81,7 +86,27 @@ export function useFileReader(options: FileValidationOptions = {}) {
         return
       }
 
-      // Read file as data URL
+      let finalFile = file
+      let processingResult: ProcessingResult | null = null
+
+      // Process image if it's an image file and processing is enabled
+      if (file.type.startsWith('image/') && config.enableProcessing) {
+        try {
+          processingResult = await processImage(file, config.processingOptions)
+          finalFile = processingResult.processedFile
+          
+          // Call processing complete callback if provided
+          if (config.onProcessingComplete) {
+            config.onProcessingComplete(processingResult)
+          }
+        } catch (processingError) {
+          console.warn('Image processing failed, using original file:', processingError)
+          // Continue with original file if processing fails
+          finalFile = file
+        }
+      }
+
+      // Read final file as data URL
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = (e) => {
@@ -89,11 +114,11 @@ export function useFileReader(options: FileValidationOptions = {}) {
           resolve(result)
         }
         reader.onerror = () => reject(new Error('Failed to read file'))
-        reader.readAsDataURL(file)
+        reader.readAsDataURL(finalFile)
       })
 
-      // Validate image dimensions
-      if (file.type.startsWith('image/')) {
+      // Validate image dimensions (using processed dimensions if available)
+      if (finalFile.type.startsWith('image/')) {
         const img = await new Promise<HTMLImageElement>((resolve, reject) => {
           const image = new Image()
           image.onload = () => resolve(image)
@@ -101,33 +126,36 @@ export function useFileReader(options: FileValidationOptions = {}) {
           image.src = dataUrl
         })
 
-        const dimensionError = validateImageDimensions(img)
-        if (dimensionError) {
-          setResult({
-            dataUrl: null,
-            file: null,
-            error: dimensionError,
-            isLoading: false,
-          })
-          
-          // Call error callback if provided
-          if (config.onError) {
-            config.onError(dimensionError)
+        // Only validate dimensions if no processing was done (processed images are already within limits)
+        if (!processingResult?.wasProcessed) {
+          const dimensionError = validateImageDimensions(img)
+          if (dimensionError) {
+            setResult({
+              dataUrl: null,
+              file: null,
+              error: dimensionError,
+              isLoading: false,
+            })
+            
+            // Call error callback if provided
+            if (config.onError) {
+              config.onError(dimensionError)
+            }
+            return
           }
-          return
         }
       }
 
       setResult({
         dataUrl,
-        file,
+        file: finalFile,
         error: null,
         isLoading: false,
       })
 
       // Call success callback if provided
       if (config.onSuccess) {
-        config.onSuccess(dataUrl, file)
+        config.onSuccess(dataUrl, finalFile)
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to process file'
@@ -143,7 +171,7 @@ export function useFileReader(options: FileValidationOptions = {}) {
         config.onError(errorMessage)
       }
     }
-  }, [validateFile, validateImageDimensions])
+  }, [validateFile, validateImageDimensions, config])
 
   const reset = useCallback(() => {
     setResult({

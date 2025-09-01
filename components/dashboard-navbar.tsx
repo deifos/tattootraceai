@@ -27,7 +27,8 @@ export const DashboardNavbar = ({ userId }: DashboardNavbarProps) => {
         <NavbarBrand as='li' className='gap-3 max-w-fit'>
           <NextLink className='flex justify-start items-center gap-1' href='/'>
             <Logo />
-            <p className='font-bold text-inherit'>{siteConfig.name}</p>
+            <p className="font-bold text-inherit hidden sm:block">{siteConfig.name}</p>
+            <p className="font-bold text-inherit sm:hidden">ttai</p>
           </NextLink>
         </NavbarBrand>
       </NavbarContent>

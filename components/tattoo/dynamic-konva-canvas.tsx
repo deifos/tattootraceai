@@ -15,6 +15,8 @@ interface KonvaPreviewCanvasProps {
   onGeneratedResult?: (imageUrl: string) => void
   onTattooRemove?: () => void
   userId?: string
+  onUploadDrawerOpen?: () => void
+  onTattooDrawerOpen?: () => void
 }
 
 // Dynamically import the Konva component with no SSR
@@ -28,7 +30,7 @@ const KonvaCanvas = dynamic(
           <div className="flex items-center justify-between">
             <span>Preview Canvas</span>
             <div className="flex gap-2">
-              <Button size="sm" disabled>
+              <Button size="sm" disabled >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Reset
               </Button>

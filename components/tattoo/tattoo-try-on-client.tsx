@@ -10,6 +10,15 @@ import { galleryStorage, type GalleryItem } from "@/lib/gallery-storage"
 import { DeleteConfirmationDialog, type DeleteConfirmationState } from "./delete-confirmation-dialog"
 import { GallerySection } from "./gallery-section"
 import { addToast } from "@heroui/toast"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerBody,
+  DrawerFooter,
+  Button,
+  useDisclosure,
+} from "@heroui/react"
 
 interface TattooTryOnClientProps {
   userId?: string
@@ -21,6 +30,10 @@ export function TattooTryOnClient({ userId }: TattooTryOnClientProps) {
   const [bodyPart, setBodyPart] = useState<string>("")
   const [isApplying, setIsApplying] = useState(false)
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([])
+  
+  // Drawer states
+  const { isOpen: isUploadDrawerOpen, onOpen: onUploadDrawerOpen, onOpenChange: onUploadDrawerOpenChange } = useDisclosure()
+  const { isOpen: isTattooDrawerOpen, onOpen: onTattooDrawerOpen, onOpenChange: onTattooDrawerOpenChange } = useDisclosure()
   
   // Confirmation dialog state
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmationState>({
@@ -42,16 +55,16 @@ export function TattooTryOnClient({ userId }: TattooTryOnClientProps) {
   }, [])
 
   const handleBaseImageUpload = useCallback(async (dataUrl: string, file: File) => {
-    console.log('handleBaseImageUpload called with:', { fileName: file.name, bodyPart, dataUrlLength: dataUrl.length })
+    // console.log('handleBaseImageUpload called with:', { fileName: file.name, bodyPart, dataUrlLength: dataUrl.length })
     setBaseImage(dataUrl)
     
     // Save to gallery
     try {
-      console.log('About to call galleryStorage.addItem...')
-      const result = await galleryStorage.addItem('base', dataUrl, file.name, bodyPart)
-      console.log('Gallery item added successfully:', result)
+      // console.log('About to call galleryStorage.addItem...')
+      await galleryStorage.addItem('base', dataUrl, file.name, bodyPart)
+      // console.log('Gallery item added successfully:', result)
       const allItems = galleryStorage.getAllItems()
-      console.log('All gallery items after adding:', allItems.length, allItems.filter(i => i.type === 'base').length)
+      // console.log('All gallery items after adding:', allItems.length, allItems.filter(i => i.type === 'base').length)
       setGalleryItems(allItems)
     } catch (error) {
       console.error('Failed to save base image to gallery:', error)
@@ -159,40 +172,62 @@ export function TattooTryOnClient({ userId }: TattooTryOnClientProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left Panel - Upload & Generate */}
-        <div className="space-y-4">
-          {/* Base Image Upload */}
-          <ErrorBoundary>
-            <ImageUploadCard
-              title="Upload Base Image"
-              image={baseImage}
-              onImageUpload={handleBaseImageUpload}
-              onImageRemove={handleBaseImageRemove}
-              onError={showError}
-              placeholder="Click or drag to upload base image"
-              icon={Upload}
-              disabled={isApplying}
-              showBodyPartInput={true}
-              bodyPart={bodyPart}
-              onBodyPartChange={setBodyPart}
-            />
-          </ErrorBoundary>
+      {/* Desktop Layout */}
+      <div className="hidden lg:block">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Left Panel - Upload & Generate */}
+          <div className="space-y-4">
+            {/* Base Image Upload */}
+            <ErrorBoundary>
+              <ImageUploadCard
+                title="Upload Base Image"
+                image={baseImage}
+                onImageUpload={handleBaseImageUpload}
+                onImageRemove={handleBaseImageRemove}
+                onError={showError}
+                placeholder="Click or drag to upload base image"
+                icon={Upload}
+                disabled={isApplying}
+                showBodyPartInput={true}
+                bodyPart={bodyPart}
+                onBodyPartChange={setBodyPart}
+              />
+            </ErrorBoundary>
 
-          {/* Tattoo Design */}
-          <ErrorBoundary>
-            <TattooGenerator
-              tattooImage={tattooImage}
-              onTattooImageChange={handleTattooImageChange}
-              onTattooImageRemove={handleTattooImageRemove}
-              onError={showError}
-              disabled={isApplying}
-            />
-          </ErrorBoundary>
+            {/* Tattoo Design */}
+            <ErrorBoundary>
+              <TattooGenerator
+                tattooImage={tattooImage}
+                onTattooImageChange={handleTattooImageChange}
+                onTattooImageRemove={handleTattooImageRemove}
+                onError={showError}
+                disabled={isApplying}
+              />
+            </ErrorBoundary>
+          </div>
+
+          {/* Center Panel - Canvas */}
+          <div className="lg:col-span-2">
+            <ErrorBoundary>
+              <PreviewCanvas
+                baseImage={baseImage}
+                tattooImage={tattooImage}
+                bodyPart={bodyPart}
+                onApplyTattoo={applyTattooToBase}
+                isApplying={isApplying}
+                onError={showError}
+                onGeneratedResult={handleGeneratedResult}
+                onTattooRemove={handleTattooImageRemove}
+                userId={userId}
+              />
+            </ErrorBoundary>
+          </div>
         </div>
+      </div>
 
-        {/* Center Panel - Canvas */}
-        <div className="lg:col-span-2 ">
+      {/* Mobile Layout */}
+      <div className="lg:hidden">
+        <div className="relative">
           <ErrorBoundary>
             <PreviewCanvas
               baseImage={baseImage}
@@ -204,8 +239,11 @@ export function TattooTryOnClient({ userId }: TattooTryOnClientProps) {
               onGeneratedResult={handleGeneratedResult}
               onTattooRemove={handleTattooImageRemove}
               userId={userId}
+              onUploadDrawerOpen={onUploadDrawerOpen}
+              onTattooDrawerOpen={onTattooDrawerOpen}
             />
           </ErrorBoundary>
+
         </div>
       </div>
 
@@ -216,6 +254,67 @@ export function TattooTryOnClient({ userId }: TattooTryOnClientProps) {
         onDeleteFromGallery={handleDeleteFromGallery}
         onClearGallery={handleClearGallery}
       />
+
+      {/* Upload Drawer */}
+      <Drawer isOpen={isUploadDrawerOpen} placement="bottom" backdrop="blur" onOpenChange={onUploadDrawerOpenChange}>
+        <DrawerContent>
+          {(onClose) => (
+            <>
+              <DrawerHeader className="flex flex-col gap-1">Upload Base Image</DrawerHeader>
+              <DrawerBody>
+                <ErrorBoundary>
+                  <ImageUploadCard
+                    title=""
+                    image={baseImage}
+                    onImageUpload={handleBaseImageUpload}
+                    onImageRemove={handleBaseImageRemove}
+                    onError={showError}
+                    placeholder="Click or drag to upload base image"
+                    icon={Upload}
+                    disabled={isApplying}
+                    showBodyPartInput={true}
+                    bodyPart={bodyPart}
+                    onBodyPartChange={setBodyPart}
+                  />
+                </ErrorBoundary>
+              </DrawerBody>
+              <DrawerFooter>
+                <Button color="danger" variant="light" onPress={onClose}>
+                  Close
+                </Button>
+              </DrawerFooter>
+            </>
+          )}
+        </DrawerContent>
+      </Drawer>
+
+      {/* Tattoo Drawer */}
+      <Drawer isOpen={isTattooDrawerOpen} placement="bottom" backdrop="blur" size="5xl" onOpenChange={onTattooDrawerOpenChange}>
+        <DrawerContent>
+          {(onClose) => (
+            <>
+              <DrawerHeader className="flex flex-col gap-1">Tattoo Design</DrawerHeader>
+              <DrawerBody>
+                <ErrorBoundary>
+                  <TattooGenerator
+                    tattooImage={tattooImage}
+                    onTattooImageChange={handleTattooImageChange}
+                    onTattooImageRemove={handleTattooImageRemove}
+                    onError={showError}
+                    disabled={isApplying}
+                    onDrawerClose={onClose}
+                  />
+                </ErrorBoundary>
+              </DrawerBody>
+              <DrawerFooter>
+                <Button color="danger" variant="light" onPress={onClose}>
+                  Close
+                </Button>
+              </DrawerFooter>
+            </>
+          )}
+        </DrawerContent>
+      </Drawer>
 
       {/* Confirmation Dialog */}
       <DeleteConfirmationDialog

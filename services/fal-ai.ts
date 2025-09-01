@@ -36,14 +36,11 @@ interface TattooDesignRequest {
   prompt: string
   style?: string
   stylePromptSuffix?: string
-  image_size?: "square" | "square_hd" | "portrait_4_3" | "portrait_16_9" | "landscape_4_3" | "landscape_16_9"
-  num_inference_steps?: number
+  aspect_ratio?: "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "21:9" | "9:21" | "3:2" | "2:3"
   guidance_scale?: number
   num_images?: number
-  enable_safety_checker?: boolean
-  output_format?: "png" | "jpeg" | "webp"
-  negative_prompt?: string
-  acceleration?: "none" | "auto"
+  output_format?: "png" | "jpeg"
+  safety_tolerance?: "1" | "2" | "3" | "4" | "5" | "6"
   seed?: number
 }
 
@@ -69,24 +66,21 @@ export class FalAIService {
       
       const fullPrompt = `${request.prompt}${stylePrompt}, tattoo design, black ink on white background, high quality, detailed`
 
-      const result = await falWithCredits.subscribe("fal-ai/qwen-image", {
+      const result = await falWithCredits.subscribe("fal-ai/flux-pro/kontext/text-to-image", {
         input: {
           prompt: fullPrompt,
-          image_size: request.image_size || "square",
-          num_inference_steps: request.num_inference_steps || 30,
-          guidance_scale: request.guidance_scale || 2.5,
+          guidance_scale: request.guidance_scale || 3.5,
           num_images: request.num_images || 1,
-          enable_safety_checker: request.enable_safety_checker ?? true,
-          output_format: request.output_format || "png",
-          negative_prompt: request.negative_prompt || "blurry, ugly, low quality, distorted",
-          acceleration: request.acceleration || "none",
+          output_format: request.output_format || "jpeg",
+          safety_tolerance: request.safety_tolerance || "2",
+          aspect_ratio: request.aspect_ratio || "1:1",
           seed: request.seed,
         },
-        logs: true,
+        logs: false,
         onQueueUpdate: (update) => {
-          if (update.status === "IN_PROGRESS") {
-            update.logs.map((log) => log.message).forEach(console.log);
-          }
+          // if (update.status === "IN_PROGRESS") {
+          //   update.logs.map((log) => log.message).forEach(console.log);
+          // }
         },
       })
 
@@ -113,14 +107,14 @@ export class FalAIService {
   static async generateTattoo(request: FalAIRequest): Promise<FalAIResponse> {
     try {
       const loras = request.loraUrl ? [{ path: request.loraUrl, scale: 1 }] : [{ path: TATTOO_LORA_URL, scale: 1 }]
-      console.log(request)
+      // console.log(request)
       
       const result = await falWithCredits.subscribe("fal-ai/flux-kontext-lora", {
         input: {
           image_url: request.imageUrl,
           prompt: `place this tattoo, ${request.prompt}`,
           loras,
-          num_inference_steps: request.num_inference_steps || 40,
+          num_inference_steps: request.num_inference_steps || 30,
           guidance_scale: request.guidance_scale || 3.5,
           num_images: request.num_images || 1,
           enable_safety_checker: false,
@@ -128,11 +122,11 @@ export class FalAIService {
           seed: request.seed,
 
         },
-        logs: true,
+        logs: false,
         onQueueUpdate: (update) => {
-          if (update.status === "IN_PROGRESS") {
-            update.logs.map((log) => log.message).forEach(console.log);
-          }
+          // if (update.status === "IN_PROGRESS") {
+          //   update.logs.map((log) => log.message).forEach(console.log);
+          // }
         },
       })
 
@@ -173,11 +167,11 @@ export class FalAIService {
   }
 
   static async uploadImageAsDataUrl(dataUrl: string): Promise<string> {
-    console.log('uploadImageAsDataUrl called with:', { 
-      hasDataUrl: !!dataUrl, 
-      length: dataUrl?.length,
-      startsWithData: dataUrl?.startsWith('data:')
-    })
+    // console.log('uploadImageAsDataUrl called with:', { 
+    //   hasDataUrl: !!dataUrl, 
+    //   length: dataUrl?.length,
+    //   startsWithData: dataUrl?.startsWith('data:')
+    // })
 
     // Validate input
     if (!dataUrl || !dataUrl.startsWith('data:')) {
@@ -213,7 +207,7 @@ export class FalAIService {
     } catch (error) {
       console.error('Image upload error:', error)
       // Fallback to data URL if upload fails
-      console.log('Falling back to data URL:', dataUrl.substring(0, 50) + '...')
+      // console.log('Falling back to data URL:', dataUrl.substring(0, 50) + '...')
       return dataUrl
     }
   }

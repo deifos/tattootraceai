@@ -7,7 +7,7 @@ module.exports = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./lib/**/*.{js,ts,jsx,tsx,mdx}",
-    "./node_modules/@heroui/theme/dist/components/(badge|button|card|chip|input|modal|slider|tabs|toast|ripple|spinner|form|popover).js"
+    "./node_modules/@heroui/theme/dist/components/(badge|button|card|chip|drawer|input|modal|slider|tabs|toast|ripple|spinner|form|popover).js"
   ],
   theme: {
     extend: {

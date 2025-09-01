@@ -68,6 +68,7 @@ interface TattooGeneratorProps {
   onTattooImageRemove?: () => void
   onError?: (error: string) => void
   disabled?: boolean
+  onDrawerClose?: () => void
 }
 
 export function TattooGenerator({ 
@@ -75,7 +76,8 @@ export function TattooGenerator({
   onTattooImageChange, 
   onTattooImageRemove,
   onError,
-  disabled = false 
+  disabled = false,
+  onDrawerClose
 }: TattooGeneratorProps) {
   const [prompt, setPrompt] = useState("")
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null)
@@ -83,7 +85,9 @@ export function TattooGenerator({
   const [selectedTab, setSelectedTab] = useState("upload")
   
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { dataUrl, file, error, isLoading, readFile, reset } = useFileReader()
+  const { dataUrl, file, error, isLoading, readFile, reset } = useFileReader({
+    enableProcessing: true
+  })
   const { decrementCredits } = useCreditsStore()
 
   // Memoize tattoo styles to prevent recreation
@@ -94,8 +98,11 @@ export function TattooGenerator({
     if (dataUrl && file) {
       onTattooImageChange(dataUrl, file)
       reset()
+      
+      // Close the drawer after successful upload
+      onDrawerClose?.()
     }
-  }, [dataUrl, file, onTattooImageChange, reset])
+  }, [dataUrl, file, onTattooImageChange, reset, onDrawerClose])
 
   // Handle file upload errors
   useEffect(() => {
@@ -154,11 +161,10 @@ export function TattooGenerator({
         prompt: prompt.trim(),
         style: selectedStyle || undefined,
         stylePromptSuffix: selectedStyleObj?.promptSuffix,
-        image_size: "square",
-        num_inference_steps: 30,
-        guidance_scale: 2.5,
-        enable_safety_checker: true,
-        output_format: "png"
+        aspect_ratio: "1:1",
+        guidance_scale: 3.5,
+        output_format: "png",
+        safety_tolerance: "2"
       })
 
       if (response.images && response.images.length > 0) {
@@ -198,6 +204,9 @@ export function TattooGenerator({
         
         // Call the parent handler with the image URL and file
         onTattooImageChange(generatedImageUrl, imageFile)
+        
+        // Close the drawer after successful generation
+        onDrawerClose?.()
       } else {
         throw new Error('No images returned from AI generation')
       }
@@ -207,11 +216,10 @@ export function TattooGenerator({
     } finally {
       setIsGenerating(false)
     }
-  }, [prompt, selectedStyle, disabled, isGenerating, onTattooImageChange, onError, memoizedTattooStyles, decrementCredits])
+  }, [prompt, selectedStyle, disabled, isGenerating, onTattooImageChange, onError, memoizedTattooStyles, decrementCredits, onDrawerClose])
 
   return (
     <div className="w-full">
-      <h3 className="text-lg font-semibold mb-4">Tattoo Design</h3>
       <Tabs aria-label="Tattoo options" selectedKey={selectedTab} onSelectionChange={(key) => setSelectedTab(key as string)}>
         <Tab key="upload" title="Upload">
           <Card>

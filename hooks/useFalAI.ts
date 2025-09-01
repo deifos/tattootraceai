@@ -39,12 +39,12 @@ export function useFalAI(options: UseFalAIOptions = {}) {
     try {
 
       // Upload or prepare the composite image
-      console.log('Uploading composite image...')
-      console.log('Input data URL length:', compositeImageDataUrl?.length)
-      console.log('Input data URL starts with data:', compositeImageDataUrl?.startsWith('data:'))
+      // console.log('Uploading composite image...')
+      // console.log('Input data URL length:', compositeImageDataUrl?.length)
+      // console.log('Input data URL starts with data:', compositeImageDataUrl?.startsWith('data:'))
       
       const imageUrl = await FalAIService.uploadImageAsDataUrl(compositeImageDataUrl)
-      console.log('Uploaded image URL:', imageUrl)
+      // console.log('Uploaded image URL:', imageUrl)
       
       if (!imageUrl) {
         throw new Error('Upload returned undefined/null image URL')

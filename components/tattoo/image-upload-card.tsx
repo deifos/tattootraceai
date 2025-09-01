@@ -1,12 +1,13 @@
 "use client"
 
-import { useRef, useCallback, useMemo } from "react"
+import { useRef, useCallback, useMemo, useState } from "react"
 import Image from "next/image"
-import { Upload, X, Loader2 } from "lucide-react"
+import { Upload, X, Loader2, CheckCircle } from "lucide-react"
 import { useFileReader } from "@/hooks/useFileReader"
 import { Card, CardBody, CardHeader } from "@heroui/card"
 import { Button } from "@heroui/button"
 import { Textarea } from "@heroui/input"
+import { createProcessingSummary, type ProcessingResult } from "@/lib/image-processor"
 
 interface ImageUploadCardProps {
   title: string
@@ -40,14 +41,27 @@ export function ImageUploadCard({
   bodyPartPlaceholder = "e.g., arm, back, shoulder, leg...",
 }: ImageUploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [processingMessage, setProcessingMessage] = useState<string>('')
+  const [showProcessingMessage, setShowProcessingMessage] = useState(false)
+  
   const fileReaderOptions = useMemo(() => ({
-    maxSizeInMB: 10,
-    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+    enableProcessing: true,
     onSuccess: (dataUrl: string, file: File) => {
       onImageUpload(dataUrl, file)
     },
     onError: (error: string) => {
       onError?.(error)
+      setShowProcessingMessage(false)
+    },
+    onProcessingComplete: (result: ProcessingResult) => {
+      const message = createProcessingSummary(result)
+      setProcessingMessage(message)
+      setShowProcessingMessage(true)
+      
+      // Hide message after 4 seconds
+      setTimeout(() => {
+        setShowProcessingMessage(false)
+      }, 4000)
     }
   }), [onImageUpload, onError])
 
@@ -143,8 +157,16 @@ export function ImageUploadCard({
               </p>
               {!disabled && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Max 10MB • JPG, PNG, GIF, WebP
+                  Large images will be automatically optimized • JPG, PNG, GIF, WebP
                 </p>
+              )}
+              
+              {/* Processing success message */}
+              {showProcessingMessage && (
+                <div className="mt-2 flex items-center gap-1 text-xs text-green-600">
+                  <CheckCircle className="w-3 h-3" />
+                  <span>{processingMessage}</span>
+                </div>
               )}
             </div>
           )}

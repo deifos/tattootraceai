@@ -18,7 +18,6 @@ export function MusicPlayer({ audioSrc, audioType = "audio/mpeg", position = "bo
   const [volume, setVolume] = useState(0.5);
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [audioLoaded, setAudioLoaded] = useState(false);
   const [audioError, setAudioError] = useState(false);
   const [userInteracted, setUserInteracted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -34,19 +33,17 @@ export function MusicPlayer({ audioSrc, audioType = "audio/mpeg", position = "bo
     
     const handleCanPlayThrough = () => {
     //   console.log("Audio can play through");
-      setAudioLoaded(true);
       setAudioError(false);
     };
     
-    const handleError = (e: Event) => {
-    //   console.error("Error loading audio:", e);
+    const handleError = () => {
+    //   console.error("Error loading audio:");
       setAudioError(true);
       setIsPlaying(false);
     };
 
     const handleLoadedData = () => {
     //   console.log("Audio data loaded");
-      setAudioLoaded(true);
     };
     
     audio.addEventListener('canplaythrough', handleCanPlayThrough);
@@ -61,7 +58,7 @@ export function MusicPlayer({ audioSrc, audioType = "audio/mpeg", position = "bo
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('loadeddata', handleLoadedData);
     };
-  }, []);
+  }, [isMuted, volume]);
 
   // Handle play/pause state changes with better race condition handling
   useEffect(() => {

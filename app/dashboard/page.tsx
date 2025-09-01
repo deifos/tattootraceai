@@ -17,8 +17,8 @@ export default async function TattooTryOnApp() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-4">
-            <h1 className="text-4xl font-bold mb-2">Tattoo Try-On Studio</h1>
-            <p className="text-default-500 text-lg">
+            <h1 className="text-2xl md:text-4xl font-bold mb-2">Tattoo Try-On Studio</h1>
+            <p className="text-default-500 text-sm md:text-lg">
               Upload your base image, design your tattoo, and see how it looks with AI
             </p>
           </div>

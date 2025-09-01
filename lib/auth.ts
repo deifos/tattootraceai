@@ -41,7 +41,7 @@ export const auth = betterAuth({
         html: getPasswordResetEmail(name, url),
       });
 
-      console.log('Password reset email sent successfully');
+      // console.log('Password reset email sent successfully');
     },
   },
 
@@ -49,8 +49,8 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      console.log('Email verification triggered for:', user.email);
-      console.log('Verification URL:', url);
+      // console.log('Email verification triggered for:', user.email);
+      // console.log('Verification URL:', url);
 
       // Extract user name or use email username as fallback
       const name = user.name || user.email.split('@')[0];

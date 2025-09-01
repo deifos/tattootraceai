@@ -16,6 +16,7 @@
     "@heroui/button": "^2.2.24",
     "@heroui/card": "^2.2.23",
     "@heroui/chip": "^2.2.20",
+    "@heroui/drawer": "^2.2.21",
     "@heroui/input": "^2.4.25",
     "@heroui/modal": "^2.2.21",
     "@heroui/react": "^2.8.2",

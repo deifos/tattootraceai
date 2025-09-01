@@ -42,11 +42,11 @@ export function CanvasControlButtons({
           )}
         </Button>
       )}
-      <Button variant="bordered" size="sm" onPress={onReset}>
+      <Button variant="bordered"  onPress={onReset}>
         <RotateCcw className="w-4 h-4 mr-2" />
         Reset
       </Button>
-      <Button variant="bordered" size="sm" onPress={onExportCanvas}>
+      <Button variant="bordered"  onPress={onExportCanvas} className="hidden">
         <Download className="w-4 h-4 mr-2" />
         Export Canvas
       </Button>
@@ -55,7 +55,7 @@ export function CanvasControlButtons({
           src={generatedImage}
           filename="generated-tattoo-result.png"
           variant="solid"
-          size="sm"
+          
         >
           <Download className="w-4 h-4 mr-2" />
           Download Result

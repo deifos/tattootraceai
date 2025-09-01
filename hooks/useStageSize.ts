@@ -66,17 +66,41 @@ export function useStageSize({
     }
   }, [containerRef, defaultSize])
 
-  // Handle window resize
+  // Handle window resize with debouncing for mobile stability
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout
+    let lastWidth = window.innerWidth
+    let lastHeight = window.innerHeight
+    
     const handleResize = () => {
-      updateStageSize()
+      clearTimeout(timeoutId)
+      
+      // Only update if width changes significantly (not just height from address bar)
+      // On mobile, address bar hide/show only affects height, not width
+      const widthDiff = Math.abs(window.innerWidth - lastWidth)
+      const heightDiff = Math.abs(window.innerHeight - lastHeight)
+      
+      // Ignore small height changes (likely address bar) if width hasn't changed
+      if (widthDiff < 10 && heightDiff < 100) {
+        return
+      }
+      
+      timeoutId = setTimeout(() => {
+        lastWidth = window.innerWidth
+        lastHeight = window.innerHeight
+        updateStageSize()
+      }, 150) // Debounce resize events
     }
 
-    window.addEventListener('resize', handleResize)
+    // Initial size calculation
     updateStageSize()
+    
+    // Listen for resize events
+    window.addEventListener('resize', handleResize, { passive: true })
 
     return () => {
       window.removeEventListener('resize', handleResize)
+      clearTimeout(timeoutId)
     }
   }, [updateStageSize])
 
